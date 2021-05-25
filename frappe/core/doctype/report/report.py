@@ -58,6 +58,7 @@ class Report(Document):
 	def get_columns(self):
 		return [d.as_dict(no_default_fields = True) for d in self.columns]
 
+	@frappe.whitelist()
 	def set_doctype_roles(self):
 		if not self.get('roles') and self.is_standard == 'No':
 			meta = frappe.get_meta(self.ref_doctype)
@@ -304,8 +305,11 @@ class Report(Document):
 
 		return data
 
-	@Document.whitelist
+	@frappe.whitelist()
 	def toggle_disable(self, disable):
+		if not self.has_permission('write'):
+			frappe.throw(_("You are not allowed to edit the report."))
+
 		self.db_set("disabled", cint(disable))
 
 @frappe.whitelist()
@@ -321,9 +325,8 @@ def get_group_by_field(args, doctype):
 	if args['aggregate_function'] == 'count':
 		group_by_field = 'count(*) as _aggregate_column'
 	else:
-		group_by_field = '{0}(`tab{1}`.{2}) as _aggregate_column'.format(
+		group_by_field = '{0}({1}) as _aggregate_column'.format(
 			args.aggregate_function,
-			doctype,
 			args.aggregate_on
 		)
 

@@ -1,4 +1,4 @@
-# Copyright (c) 2015, Frappe Technologies Pvt. Ltd. and Contributors
+# Copyright (c) 2021, Frappe Technologies Pvt. Ltd. and Contributors
 # MIT License. See license.txt
 
 from __future__ import unicode_literals, print_function
@@ -126,16 +126,12 @@ recursive-include {app_name} *.svg
 recursive-include {app_name} *.txt
 recursive-exclude {app_name} *.pyc"""
 
-init_template = """# -*- coding: utf-8 -*-
-from __future__ import unicode_literals
-
+init_template = """
 __version__ = '0.0.1'
 
 """
 
-hooks_template = """# -*- coding: utf-8 -*-
-from __future__ import unicode_literals
-from . import __version__ as app_version
+hooks_template = """from . import __version__ as app_version
 
 app_name = "{app_name}"
 app_title = "{app_title}"
@@ -278,11 +274,41 @@ app_license = "{app_license}"
 #
 # auto_cancel_exempted_doctypes = ["Auto Repeat"]
 
+
+# User Data Protection
+# --------------------
+
+user_data_fields = [
+	{{
+		"doctype": "{{doctype_1}}",
+		"filter_by": "{{filter_by}}",
+		"redact_fields": ["{{field_1}}", "{{field_2}}"],
+		"partial": 1,
+	}},
+	{{
+		"doctype": "{{doctype_2}}",
+		"filter_by": "{{filter_by}}",
+		"partial": 1,
+	}},
+	{{
+		"doctype": "{{doctype_3}}",
+		"strict": False,
+	}},
+	{{
+		"doctype": "{{doctype_4}}"
+	}}
+]
+
+# Authentication and authorization
+# --------------------------------
+
+# auth_hooks = [
+# 	"{app_name}.auth.validate"
+# ]
+
 """
 
-desktop_template = """# -*- coding: utf-8 -*-
-from __future__ import unicode_literals
-from frappe import _
+desktop_template = """from frappe import _
 
 def get_data():
 	return [
@@ -296,8 +322,7 @@ def get_data():
 	]
 """
 
-setup_template = """# -*- coding: utf-8 -*-
-from setuptools import setup, find_packages
+setup_template = """from setuptools import setup, find_packages
 
 with open('requirements.txt') as f:
 	install_requires = f.read().strip().split('\\n')

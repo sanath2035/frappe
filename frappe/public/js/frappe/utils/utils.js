@@ -220,8 +220,23 @@ Object.assign(frappe.utils, {
 		});
 		return out.join(newline);
 	},
+
+
 	escape_html: function(txt) {
-		return $("<div></div>").text(txt || "").html();
+		let escape_html_mapping = {
+			'&': '&amp;',
+			'<': '&lt;',
+			'>': '&gt;',
+			'"': '&quot;',
+			"'": '&#39;',
+			'/': '&#x2F;',
+			'`': '&#x60;',
+			'=': '&#x3D;'
+		};
+
+		return String(txt).replace(/[&<>"'`=/]/g, function(char) {
+			return escape_html_mapping[char];
+		});
 	},
 
 	html2text: function(html) {
@@ -819,7 +834,7 @@ Object.assign(frappe.utils, {
 	get_form_link: function(doctype, name, html = false, display_text = null) {
 		display_text = display_text || name;
 		name = encodeURIComponent(name);
-		const route = `/app/${encodeURIComponent(frappe.router.slug(doctype))}/${name}`;
+		const route = `/app/${encodeURIComponent(doctype.toLowerCase().replace(/ /g, '-'))}/${name}`;
 		if (html) {
 			return `<a href="${route}">${display_text}</a>`;
 		}
@@ -923,7 +938,7 @@ Object.assign(frappe.utils, {
 		});
 	},
 	is_rtl(lang=null) {
-		return ["ar", "he", "fa"].includes(lang || frappe.boot.lang);
+		return ["ar", "he", "fa", "ps"].includes(lang || frappe.boot.lang);
 	},
 	bind_actions_with_object($el, object) {
 		// remove previously bound event
@@ -1257,21 +1272,6 @@ Object.assign(frappe.utils, {
 		</div>`);
 	},
 
-	get_names_for_mentions() {
-		let names_for_mentions = Object.keys(frappe.boot.user_info || [])
-			.filter(user => {
-				return !["Administrator", "Guest"].includes(user)
-					&& frappe.boot.user_info[user].allowed_in_mentions
-					&& frappe.boot.user_info[user].user_type === 'System User';
-			})
-			.map(user => {
-				return {
-					id: frappe.boot.user_info[user].name,
-					value: frappe.boot.user_info[user].fullname,
-				};
-			});
-		return names_for_mentions;
-	},
 	print(doctype, docname, print_format, letterhead, lang_code) {
 		let w = window.open(
 			frappe.urllib.get_full_url(
