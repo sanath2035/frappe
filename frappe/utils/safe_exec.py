@@ -61,7 +61,9 @@ def get_safe_globals():
 
 	out = NamespaceDict(
 		# make available limited methods of frappe
-		json=json,
+		json=NamespaceDict(
+			loads = json.loads,
+			dumps = json.dumps),
 		dict=dict,
 		log=frappe.log,
 		_dict=frappe._dict,
@@ -82,6 +84,7 @@ def get_safe_globals():
 			get_list=frappe.get_list,
 			get_all=frappe.get_all,
 			get_system_settings=frappe.get_system_settings,
+			rename_doc=frappe.rename_doc,
 
 			utils=datautils,
 			get_url=frappe.utils.get_url,
@@ -119,7 +122,7 @@ def get_safe_globals():
 		scrub=scrub,
 		guess_mimetype=mimetypes.guess_type,
 		html2text=html2text,
-		dev_server=1 if os.environ.get('DEV_SERVER', False) else 0,
+		dev_server=1 if frappe._dev_server else 0,
 		run_script=run_script
 	)
 
@@ -148,6 +151,7 @@ def get_safe_globals():
 	# default writer allows write access
 	out._write_ = _write
 	out._getitem_ = _getitem
+	out._getattr_ = _getattr
 
 	# allow iterators and list comprehension
 	out._getiter_ = iter
@@ -173,6 +177,27 @@ def _getitem(obj, key):
 	if isinstance(key, str) and key.startswith('_'):
 		raise SyntaxError('Key starts with _')
 	return obj[key]
+
+def _getattr(object, name, default=None):
+	# guard function for RestrictedPython
+	# allow any key to be accessed as long as
+	# 1. it does not start with an underscore (safer_getattr)
+	# 2. it is not an UNSAFE_ATTRIBUTES
+
+	UNSAFE_ATTRIBUTES = {
+		# Generator Attributes
+		"gi_frame", "gi_code",
+		# Coroutine Attributes
+		"cr_frame", "cr_code", "cr_origin",
+		# Async Generator Attributes
+		"ag_code", "ag_frame",
+		# Traceback Attributes
+		"tb_frame", "tb_next",
+	}
+
+	if isinstance(name, str) and (name in UNSAFE_ATTRIBUTES):
+		raise SyntaxError("{name} is an unsafe attribute".format(name=name))
+	return RestrictedPython.Guards.safer_getattr(object, name, default=default)
 
 def _write(obj):
 	# guard function for RestrictedPython
